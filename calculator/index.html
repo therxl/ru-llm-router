@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Калькулятор нагрузки — русский LLM-роутер</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#18202b;background:#f5f7fa}
+body{max-width:1000px;margin:0 auto;padding:24px}h1{font-size:clamp(1.6rem,4vw,2.3rem);margin-bottom:.4rem}
+.intro,.note{color:#566477}.layout{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px;margin:22px 0}
+section,.metric{background:white;border:1px solid #dce2e9;border-radius:14px;padding:18px}
+label{display:block;font-weight:600;margin:13px 0 6px}input,select{box-sizing:border-box;width:100%;padding:10px;border:1px solid #aeb9c6;border-radius:8px;font:inherit;background:white}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px}.name{color:#566477;font-size:.88rem}.value{font-size:1.4rem;font-weight:750;margin-top:6px;overflow-wrap:anywhere}
+table{width:100%;border-collapse:collapse;margin-top:10px}th,td{text-align:left;border-bottom:1px solid #e3e7ed;padding:9px 6px}footer{margin:28px 0;color:#647184;font-size:.9rem}
+@media(max-width:520px){body{padding:14px}section{padding:14px}}
+</style>
+</head>
+<body>
+<h1>Калькулятор нагрузки LLM-роутера</h1>
+<p class="intro">Оценка RPS, объёма токенов, конкурентности и стоимости. Все вычисления выполняются локально в браузере; данные никуда не отправляются.</p>
+<div class="layout">
+<section><h2>Нагрузка</h2>
+<label for="requests">Запросов в сутки</label><input id="requests" type="number" min="1" value="1000">
+<label for="peak">Пиковый множитель</label><select id="peak"><option value="5">5× — умеренный</option><option value="10">10× — высокий</option><option value="20">20× — очень высокий</option><option value="50">50× — экстремальный</option></select>
+<label for="duration">Средняя длительность запроса, секунд</label><input id="duration" type="number" min="0.1" step="0.1" value="10">
+<label for="calls">Вызовов LLM на запрос</label><input id="calls" type="number" min="1" step="1" value="1">
+</section>
+<section><h2>Токены и тарифы</h2>
+<label for="inputTokens">Входных токенов на запрос</label><input id="inputTokens" type="number" min="0" value="4000">
+<label for="outputTokens">Выходных токенов на запрос</label><input id="outputTokens" type="number" min="0" value="1000">
+<label for="inputPrice">Цена входа за 1 млн токенов, USD</label><input id="inputPrice" type="number" min="0" step="0.01" value="0.10">
+<label for="outputPrice">Цена выхода за 1 млн токенов, USD</label><input id="outputPrice" type="number" min="0" step="0.01" value="0.40">
+</section></div>
+<h2>Результаты</h2>
+<div class="metrics">
+<div class="metric"><div class="name">Средний RPS</div><div class="value" id="avgRps">—</div></div>
+<div class="metric"><div class="name">Пиковый RPS</div><div class="value" id="peakRps">—</div></div>
+<div class="metric"><div class="name">Средняя конкурентность</div><div class="value" id="concurrency">—</div></div>
+<div class="metric"><div class="name">Токенов в сутки</div><div class="value" id="dailyTokens">—</div></div>
+<div class="metric"><div class="name">Стоимость в сутки</div><div class="value" id="dailyCost">—</div></div>
+<div class="metric"><div class="name">Стоимость за 30 дней</div><div class="value" id="monthlyCost">—</div></div>
+</div>
+<section style="margin-top:16px"><h2>Детализация</h2>
+<table><tbody>
+<tr><th>Входных токенов в сутки</th><td id="dailyInput">—</td></tr>
+<tr><th>Выходных токенов в сутки</th><td id="dailyOutput">—</td></tr>
+<tr><th>Входных токенов за 30 дней</th><td id="monthlyInput">—</td></tr>
+<tr><th>Выходных токенов за 30 дней</th><td id="monthlyOutput">—</td></tr>
+<tr><th>Стоимость одного запроса</th><td id="perRequest">—</td></tr>
+<tr><th>Конкурентность на пике</th><td id="peakConcurrency">—</td></tr>
+</tbody></table>
+<p class="note">Конкурентность ≈ RPS × средняя длительность запроса (закон Литтла). Тарифы по умолчанию условные, не актуальные цены провайдеров. Учитывается число вызовов LLM; кэширование, скидки, повторы и дополнительные сборы не учитываются.</p>
+</section>
+<footer>Русский LLM-роутер · предварительное планирование. Перед production-запуском проверяйте оценки на реальной телеметрии.</footer>
+<script>
+const ids=["requests","peak","duration","calls","inputTokens","outputTokens","inputPrice","outputPrice"];
+const el=id=>document.getElementById(id);
+const num=id=>Math.max(0,Number(el(id).value)||0);
+const fmt=(n,d=2)=>Number(n).toLocaleString("ru-RU",{maximumFractionDigits:d});
+const usd=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:4}).format(n);
+function calc(){
+ const req=num("requests"), peak=num("peak"), duration=num("duration"), calls=num("calls");
+ const it=num("inputTokens"), ot=num("outputTokens"), ip=num("inputPrice"), op=num("outputPrice");
+ const rps=req/86400, peakRps=rps*peak, din=req*it*calls, dout=req*ot*calls;
+ const per=(it*ip+ot*op)/1000000*calls, daily=per*req;
+ el("avgRps").textContent=fmt(rps,5);el("peakRps").textContent=fmt(peakRps,4);
+ el("concurrency").textContent=fmt(rps*duration,2);el("dailyTokens").textContent=fmt(din+dout,0);
+ el("dailyCost").textContent=usd(daily);el("monthlyCost").textContent=usd(daily*30);
+ el("dailyInput").textContent=fmt(din,0);el("dailyOutput").textContent=fmt(dout,0);
+ el("monthlyInput").textContent=fmt(din*30,0);el("monthlyOutput").textContent=fmt(dout*30,0);
+ el("perRequest").textContent=usd(per);el("peakConcurrency").textContent=fmt(peakRps*duration,2);
+}
+ids.forEach(id=>el(id).addEventListener("input",calc));calc();
+</script>
+</body></html>
