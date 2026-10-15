@@ -1,0 +1,11 @@
+# Secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
+configs/local.yaml
+
+# Go build/test outputs
+/bin/
+/dist/
+coverage.out
+*.test
