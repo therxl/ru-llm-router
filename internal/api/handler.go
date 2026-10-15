@@ -1,10 +1,9 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -23,11 +22,11 @@ type Handler struct {
 func NewHandler(r ChatRouter) *Handler { return &Handler{router: r} }
 
 type chatCompletionResponse struct {
-	ID      string    `json:"id"`
-	Object  string    `json:"object"`
-	Created int64     `json:"created"`
-	Model   string    `json:"model"`
-	Choices []choice  `json:"choices"`
+	ID      string   `json:"id"`
+	Object  string   `json:"object"`
+	Created int64    `json:"created"`
+	Model   string   `json:"model"`
+	Choices []choice `json:"choices"`
 }
 
 type choice struct {
@@ -89,12 +88,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	now := time.Now()
+	requestID := fmt.Sprintf("req_%d", now.UnixNano())
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Request-ID", fmt.Sprintf("req_%d", time.Now().UnixNano()))
+	w.Header().Set("X-Request-ID", requestID)
 	_ = json.NewEncoder(w).Encode(chatCompletionResponse{
-		ID:      fmt.Sprintf("chatcmpl_%d", time.Now().UnixNano()),
+		ID:      fmt.Sprintf("chatcmpl_%d", now.UnixNano()),
 		Object:  "chat.completion",
-		Created: time.Now().Unix(),
+		Created: now.Unix(),
 		Model:   resp.Model,
 		Choices: []choice{{Index: 0, Message: responseMessage{Role: "assistant", Content: resp.Content}, FinishReason: "stop"}},
 	})
@@ -105,6 +106,3 @@ func writeError(w http.ResponseWriter, status int, typ, message string) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(errorResponse{Error: errorDetail{Message: message, Type: typ}})
 }
-
-var _ = errors.Is
-var _ = io.EOF
