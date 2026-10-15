@@ -1,0 +1,7 @@
+server:
+  address: "127.0.0.1:8080"
+
+connections:
+  - name: "mock-default"
+    provider: "mock"
+    model: "mock-model"
