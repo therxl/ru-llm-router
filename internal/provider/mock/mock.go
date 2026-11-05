@@ -11,7 +11,7 @@ type Provider struct{}
 
 func New() *Provider { return &Provider{} }
 
-func (p *Provider) Chat(_ context.Context, model string, req provider.ChatRequest) (provider.ChatResponse, error) {
+func (p *Provider) Chat(_ context.Context, connection provider.Connection, req provider.ChatRequest) (provider.ChatResponse, error) {
 	var last string
 	for _, message := range req.Messages {
 		if message.Role == "user" {
@@ -22,7 +22,7 @@ func (p *Provider) Chat(_ context.Context, model string, req provider.ChatReques
 		last = "(no user message)"
 	}
 	return provider.ChatResponse{
-		Model:   model,
-		Content: fmt.Sprintf("Mock response from %s: received your message: %s", model, last),
+		Model:   connection.Model,
+		Content: fmt.Sprintf("Mock response from %s: received your message: %s", connection.Model, last),
 	}, nil
 }
