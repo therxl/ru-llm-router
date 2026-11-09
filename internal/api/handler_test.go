@@ -15,7 +15,7 @@ import (
 type testRouter struct{ p provider.Provider }
 
 func (t testRouter) Chat(ctx context.Context, req provider.ChatRequest) (provider.ChatResponse, error) {
-	return t.p.Chat(ctx, req.Model, req)
+	return t.p.Chat(ctx, provider.Connection{Model: req.Model}, req)
 }
 
 func TestChatCompletions(t *testing.T) {

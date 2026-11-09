@@ -11,6 +11,8 @@ import (
 	"github.com/therxl/ru-llm-router/internal/api"
 	"github.com/therxl/ru-llm-router/internal/config"
 	"github.com/therxl/ru-llm-router/internal/provider/mock"
+	"github.com/therxl/ru-llm-router/internal/provider/ollama"
+	"github.com/therxl/ru-llm-router/internal/provider/openai"
 	"github.com/therxl/ru-llm-router/internal/router"
 )
 
@@ -24,7 +26,9 @@ func main() {
 	}
 
 	providers := map[string]router.Provider{
-		"mock": mock.New(),
+		"mock":   mock.New(),
+		"openai": openai.New(),
+		"ollama": ollama.New(),
 	}
 	rt, err := router.New(cfg, providers)
 	if err != nil {

@@ -1,6 +1,16 @@
 package provider
 
-import "context"
+import (
+	"context"
+)
+
+type Connection struct {
+	Name     string
+	Provider string
+	Model    string
+	BaseURL  string
+	APIKey   string
+}
 
 type Message struct {
 	Role    string `json:"role"`
@@ -18,5 +28,5 @@ type ChatResponse struct {
 }
 
 type Provider interface {
-	Chat(context.Context, string, ChatRequest) (ChatResponse, error)
+	Chat(context.Context, Connection, ChatRequest) (ChatResponse, error)
 }
