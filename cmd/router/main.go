@@ -11,6 +11,7 @@ import (
 	"github.com/therxl/ru-llm-router/internal/api"
 	"github.com/therxl/ru-llm-router/internal/config"
 	"github.com/therxl/ru-llm-router/internal/provider/mock"
+	"github.com/therxl/ru-llm-router/internal/provider/ollama"
 	"github.com/therxl/ru-llm-router/internal/provider/openai"
 	"github.com/therxl/ru-llm-router/internal/router"
 )
@@ -25,8 +26,9 @@ func main() {
 	}
 
 	providers := map[string]router.Provider{
-		"mock": mock.New(),
+		"mock":   mock.New(),
 		"openai": openai.New(),
+		"ollama": ollama.New(),
 	}
 	rt, err := router.New(cfg, providers)
 	if err != nil {
@@ -41,12 +43,12 @@ func main() {
 	mux.Handle("POST /v1/chat/completions", api.NewHandler(rt))
 
 	server := &http.Server{
-		Addr: cfg.Server.Address,
-		Handler: mux,
+		Addr:              cfg.Server.Address,
+		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout: 15 * time.Second,
-		WriteTimeout: 60 * time.Second,
-		IdleTimeout: 60 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	log.Printf("ru-llm-router listening on %s", cfg.Server.Address)

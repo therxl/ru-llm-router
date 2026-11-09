@@ -90,7 +90,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 	requestID := fmt.Sprintf("req_%d", now.UnixNano())
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Request-ID", requestID)
 	_ = json.NewEncoder(w).Encode(chatCompletionResponse{
 		ID:      fmt.Sprintf("chatcmpl_%d", now.UnixNano()),
@@ -102,7 +102,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeError(w http.ResponseWriter, status int, typ, message string) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(errorResponse{Error: errorDetail{Message: message, Type: typ}})
 }
